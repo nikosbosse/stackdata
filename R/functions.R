@@ -88,7 +88,8 @@ create_arrays <- function (data) {
 stack_crps <- function(data, 
                        lambda = NULL, 
                        gamma = NULL, 
-                       dirichlet_alpha = 1.001) {
+                       dirichlet_alpha = 1.001,
+                       R, K, S, T) {
   
   if (is.null(lambda))
     for (t in 1:T)
