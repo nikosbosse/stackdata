@@ -27,5 +27,7 @@ data %>%
     geom_ribbon(aes(date, ymin = ql, ymax = qh), alpha = 0.25) +
     geom_point(aes(date, median)) +
     geom_point(aes(date, y_obs), color = "red") +
-    facet_wrap(~ model)
+    facet_wrap(~ model) + 
+  theme(text = element_text(family = 'Sans Serif'),
+        legend.position = "bottom")
   

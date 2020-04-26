@@ -58,7 +58,7 @@ create_arrays <- function (data) {
       dplyr::filter(geography %in% regions[r], 
                     sample_nr == 1, 
                     model == models[1]) %>%
-      .$y_obs %>% unique()
+      .$y_obs
   }
   
   return(list(prediction_array = predict_sample_arr, 
@@ -122,7 +122,7 @@ stack_crps <- function(data,
 
 
 # ============================================================================ #
-load_data <- function(regions, 
+load_data_rt <- function(regions, 
                       horizon = 7,
                       split_date = as.Date("2020-04-08")) {
   h <- horizon
@@ -137,8 +137,15 @@ load_data <- function(regions,
                            readRDS(here::here(filename))
                          })
   
-  forecast_rts <- do.call(rbind, forecast_rts) %>%
-    dplyr::filter(horizon == h) 
+  if (length(forecast_cases == 1)) {
+    forecast_rts <- forecast_rts[[1]] %>%
+      dplyr::filter(horizon == h) 
+  } else {
+    forecast_rts <- do.call(rbind, forecast_rts) %>%
+      dplyr::filter(horizon == h) 
+  }
+  
+  
   
   ## load true_data
   rt_timeseries <- readRDS(here::here("data/z_true_data/rt_timeseries.rds")) %>%
@@ -175,6 +182,54 @@ load_data <- function(regions,
 
 
 
+load_data_cases <- function(regions, 
+                            horizon = 7,
+                            split_date = as.Date("2020-04-08")) {
+  h <- horizon
+  
+  #### load data
+  ## load rt forecasts
+  df <- vector("list", length(regions)) 
+  forecast_cases <- lapply(seq_along(df), 
+                         FUN = function(i) {
+                           filename <- paste("data/", regions[i], 
+                                             "/forecast_cases.rds", sep = "")
+                           readRDS(here::here(filename))
+                         })
+  
+  if (length(forecast_cases) == 1) {
+    forecast_cases <- forecast_cases[[1]]
+  } else {
+    forecast_cases <- do.call(rbind, forecast_rts) %>%
+      dplyr::filter(horizon == h) 
+  }
+  
+  
+  ## load true_data
+  case_timeseries <- readRDS(here::here("data/z_true_data/case_timeseries.rds")) %>%
+    dplyr::filter(timeseries %in% regions, 
+                  date <= split_date) %>%
+    dplyr::group_by(timeseries, date) %>%
+    dplyr::summarise(cases = median(cases)) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(case_obs = cases) 
+  
+  ## merge so we only have dates for which we have observed values and forecasts
+  obs_and_pred <- dplyr::inner_join(forecast_cases, 
+                                    case_timeseries, 
+                                    by = c("date", 
+                                           "timeseries")) %>%
+    dplyr::rename(geography = timeseries, 
+                  sample_nr = sample, 
+                  y_obs = case_obs, 
+                  y_pred = cases) %>%
+    dplyr::group_by(obs_sample) %>%
+    dplyr::mutate(sample_nr = (as.numeric(obs_sample) - 1) * 100 + sample_nr) %>%
+    dplyr::ungroup()
+  
+  return(list(train_data = obs_and_pred))
+  
+}
 
 
 
