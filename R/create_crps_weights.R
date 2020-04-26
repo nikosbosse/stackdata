@@ -1,6 +1,8 @@
 library(tidyverse)
 
 source("R/functions.R")
+# devtools::install_github("nikosbosse/stackr)
+# library(stackr)
 
 #### define parameters to look at
 regions <- list.files("data/")[2]
@@ -17,6 +19,9 @@ K = data %>% pull(model) %>% unique %>% length
 S = data %>% pull(sample_nr) %>% unique %>% length
 T = data %>% pull(date) %>% unique %>% length
 stack_crps(data, R = R, K = K, S = S, T = T)
+
+# Alternative: use the stackr package function
+# stackr::stack_crps(data)
 
 data %>%
   group_by(model, date) %>%
