@@ -8,7 +8,8 @@ h <- 2 # horizon
 split_date <- as.Date("2020-04-08") # split date into test and training date
 
 # load data
-data <- load_data(regions, h, split_date)$train_data
+# data <- load_data_rt(regions, h, split_date)$train_data
+data <- load_data_cases(regions, h, split_date)$train_data
 
 # find stacking weights
 R = data %>% pull(geography) %>% unique %>% length
