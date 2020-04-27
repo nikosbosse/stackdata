@@ -5,14 +5,17 @@ source("R/functions.R")
 # library(stackr)
 
 #### define parameters to look at
-regions <- list.files("data/")[3]
+regions <- list.files("data/")[5]
 h <- 2 # horizon
 split_date <- as.Date("2020-04-08") # split date into test and training date
 
 # load data
-# data <- load_data_rt(regions, h, split_date)$train_data
-traindata <- load_data_cases(regions, h, split_date)$train_data
-testdata <- load_data_cases(regions, h, split_date)$test_data
+traindata <- load_data_rt(regions, h, split_date)$train_data
+testdata <- load_data_rt(regions, h, split_date)$test_data
+
+
+# traindata <- load_data_cases(regions, h, split_date)$train_data
+# testdata <- load_data_cases(regions, h, split_date)$test_data
 
 # find stacking weights
 R = traindata %>% pull(geography) %>% unique %>% length
@@ -22,7 +25,7 @@ T = traindata %>% pull(date) %>% unique %>% length
 
 # w <- stack_crps(traindata, R = R, K = K, S = S, T = T)
 # Alternative: use the stackr package function
-stackr::stack_crps(traindata)
+w <- stackr::stack_crps(traindata)
 
 
 ## plotting

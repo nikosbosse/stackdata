@@ -137,7 +137,7 @@ load_data_rt <- function(regions,
                            readRDS(here::here(filename))
                          })
   
-  if (length(forecast_cases == 1)) {
+  if (length(forecast_rts) == 1) {
     forecast_rts <- forecast_rts[[1]] %>%
       dplyr::filter(horizon == h) 
   } else {
@@ -149,8 +149,7 @@ load_data_rt <- function(regions,
   
   ## load true_data
   rt_timeseries <- readRDS(here::here("data/z_true_data/rt_timeseries.rds")) %>%
-    dplyr::filter(timeseries %in% regions, 
-                  date <= split_date) %>%
+    dplyr::filter(timeseries %in% regions) %>%
     dplyr::group_by(timeseries, date) %>%
     dplyr::summarise(rt = median(rt)) %>%
     dplyr::ungroup() %>%
@@ -169,7 +168,13 @@ load_data_rt <- function(regions,
     dplyr::mutate(sample_nr = (as.numeric(obs_sample) - 1) * 100 + sample_nr) %>%
     dplyr::ungroup()
   
-  return(list(train_data = obs_and_pred))
+  train_data <- obs_and_pred %>%
+    dplyr::filter(date <= split_date)
+  
+  test_data <- obs_and_pred %>%
+    dplyr::filter(date > split_date)
+  
+  return(list(train_data = train_data, test_data = test_data))
   
 }
 
@@ -284,8 +289,7 @@ load_data_cases <- function(regions,
   
   ## load true_data
   case_timeseries <- readRDS(here::here("data/z_true_data/case_timeseries.rds")) %>%
-    dplyr::filter(timeseries %in% regions, 
-                  date <= split_date) %>%
+    dplyr::filter(timeseries %in% regions) %>%
     dplyr::group_by(timeseries, date) %>%
     dplyr::summarise(cases = median(cases)) %>%
     dplyr::ungroup() %>%
@@ -304,7 +308,14 @@ load_data_cases <- function(regions,
     dplyr::mutate(sample_nr = (as.numeric(obs_sample) - 1) * 100 + sample_nr) %>%
     dplyr::ungroup()
   
-  return(list(train_data = obs_and_pred))
+  
+  train_data <- obs_and_pred %>%
+    dplyr::filter(date <= split_date)
+  
+  test_data <- obs_and_pred %>%
+    dplyr::filter(date > split_date)
+  
+  return(list(train_data = train_data, test_data = test_data))
   
 }
 
