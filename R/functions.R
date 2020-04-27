@@ -274,7 +274,8 @@ load_data_cases <- function(regions,
                          })
   
   if (length(forecast_cases) == 1) {
-    forecast_cases <- forecast_cases[[1]]
+    forecast_cases <- forecast_cases[[1]] %>%
+    dplyr::filter(horizon == h) 
   } else {
     forecast_cases <- do.call(rbind, forecast_rts) %>%
       dplyr::filter(horizon == h) 
