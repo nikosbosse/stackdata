@@ -1,4 +1,5 @@
 library(tidyverse)
+library(scoringRules)
 
 source("R/functions.R")
 # devtools::install_github("nikosbosse/stackr)
@@ -54,7 +55,7 @@ score_df <- rbind(testdata, mixture)
 
 score_df %>%
   group_by(model, date) %>%
-  summarise(crps = scoringutils::crps(unique(y_obs), 
+  summarise(crps = scoringRules::crps_sample(unique(y_obs), 
                                       t(as.vector(y_pred)))) %>%
   group_by(model) %>%
   summarise(crps = mean(crps))
