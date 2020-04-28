@@ -11,12 +11,11 @@ h <- 2 # horizon
 split_date <- as.Date("2020-04-08") # split date into test and training date
 
 # load data
-traindata <- load_data_rt(regions, h, split_date)$train_data
-testdata <- load_data_rt(regions, h, split_date)$test_data
+# traindata <- load_data_rt(regions, h, split_date)$train_data
+# testdata <- load_data_rt(regions, h, split_date)$test_data
 
-
-# traindata <- load_data_cases(regions, h, split_date)$train_data
-# testdata <- load_data_cases(regions, h, split_date)$test_data
+traindata <- load_data_cases(regions, h, split_date)$train_data
+testdata <- load_data_cases(regions, h, split_date)$test_data
 
 # find stacking weights
 R = traindata %>% pull(geography) %>% unique %>% length
@@ -48,7 +47,7 @@ traindata %>%
 
 ## make mixture model
 # need to replace this by Yuling's sequential MC method
-mixture <- stackr::create_sampled_mixture(testdata, w)
+mixture <- stackr::mixture_from_sample(testdata, w)
 
 #### score results
 score_df <- rbind(testdata, mixture)
