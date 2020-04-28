@@ -182,40 +182,83 @@ load_data_rt <- function(regions,
 
 ## generate mixture ensembles using Sequential Quasi Monte Carlo 
 ## return a length-S vector that is weighted col-mixture of individual_draws.
-mixture_ensembles= function (individual_draws,  weight, random_seed=1 , permutation=TRUE)
+mixture_ensembles <- function(individual_draws,  
+                              weight, 
+                              random_seed = 1, 
+                              permutation = TRUE)
 {
 	set.seed(random_seed)
-  S=dim(individual_draws)[1]
-	K=dim(individual_draws)[2]
-	if(permutation==TRUE)
-	   individual_draws=individual_draws[sample(1:S), ]	 # random permutation of draws
-	integer_part=round(S*weight)
-	existing_draws=integer_part_index[K+1]
-	if(existing_draws<S){
-	remaining_draws=S-existing_draws
-	remaining_assignment=sample(1:K, remaining_draws, prob = weight, replace = F)
-	integer_part[remaining_assignment] =integer_part[remaining_assignment]+1
+  S <- dim(individual_draws)[1]
+	K <- dim(individual_draws)[2]
+	
+	if (permutation == TRUE) {
+	  individual_draws <- individual_draws[sample(1:S), ]	 # random permutation of draws
 	}
-	integer_part_index=c(0,cumsum(integer_part))
-	mixture_vector=rep(NA, S)
-	for(k in 1:K)
-		mixture_vector[(1+integer_part_index[k]):integer_part_index[k+1]]=individual_draws[1:integer_part[k],k]
+	   
+	round_with_preserved_sum <- function(x) {
+	  target_sum = sum(x)
+	  
+	  ints <- as.integer(x)
+	  int_sum <- sum(ints)
+	  remainder <- target_sum - int_sum
+	  
+	  decimals <- x - ints
+	  order <- order(decimals, decreasing = T)
+	  i <- 1
+	  while(remainder > 0) {
+	    ints[order[i]] <- ints[order[i]] + 1
+	    remainder <- remainder - 1
+	  }
+	  
+	  return(ints)
+	}
+	
+	integer_part <- round_with_preserved_sum(S * weight)
+	
+	integer_part_index <- c(0,cumsum(integer_part))
+	existing_draws <- integer_part_index[K+1]
+	
+	
+	if (existing_draws < S){
+  	remaining_draws <- S - existing_draws
+  	remaining_assignment <- sample(1:K, 
+  	                               remaining_draws, 
+  	                               prob = weight, 
+  	                               replace = F)
+  	integer_part[remaining_assignment] <- integer_part[remaining_assignment]+1
+	}
+	
+	mixture_vector <- rep(NA, S)
+	for(k in 1:K) {
+	  # skip if no draws to make
+	  if (integer_part[k] == 0) 
+	    next()
+	  mixture_vector[(1 + integer_part_index[k]):integer_part_index[k + 1]] <- 
+	    individual_draws[1:integer_part[k], k]
+	}
 	return(mixture_vector)
 }
 	
 #==============================================================================
 ## generate mixture ensembles without Sequential Quasi Monte Carlo 
 ## probably what you call bootstrap
-mixture_ensembles_simple= function (individual_draws,  weight, random_seed=1 , permutation=TRUE)
+mixture_ensembles_simple = function (individual_draws,  
+                                     weight, 
+                                     random_seed = 1, 
+                                     permutation=TRUE)
 {
 	set.seed(random_seed)
-	S=dim(individual_draws)[1]
-	K=dim(individual_draws)[2]
-	if(permutation==TRUE)
-		individual_draws=individual_draws[sample(1:S), ]	 # random permutation of draws
+	S <- dim(individual_draws)[1]
+	K <- dim(individual_draws)[2]
+	
+	if (permutation == TRUE) {
+	  individual_draws=individual_draws[sample(1:S), ]	 # random permutation of draws
+	}
+		
 	assignment=sample(1:K, S, prob = weight, replace = TRUE)
 	return( sapply(c(1:S), function(i){individual_draws[sample(1:S, 1),assignment[i]]}) )
 }
+
 ## example:
 # K=3
 # S=1000
@@ -224,7 +267,7 @@ mixture_ensembles_simple= function (individual_draws,  weight, random_seed=1 , p
 # individual_draws[,i]=rnorm(S, i,0)
 # weight=c(0.25,0.25,0.5)
 # table(mixture_ensembles(individual_draws=individual_draws,  weight=weight, random_seed=1 , permutation=TRUE))
-# table(mixture_ensembles_simple(individual_draws=individual_draws,  weight=weight, random_seed=1 , permutation=TRUE))
+# table(mixture_ensembles_simple(individual_draws=individual_draws,  weight=weight, random_seed=3 , permutation=TRUE))
 # weight=c(0.1111,0.1111,0)
 # weight[3]=1-sum(weight)
 # table(mixture_ensembles(individual_draws=individual_draws,  weight=weight, random_seed=1 , permutation=TRUE))
@@ -233,26 +276,31 @@ mixture_ensembles_simple= function (individual_draws,  weight, random_seed=1 , p
 ## interval score of a single model  eqn.43 of Gneiting and Raftery: Proper Scoring Rules
 ## input: observation y; predictive draws pred_draws; desireved coverage: confidence 
 ##  negatively oriented (the smaller the better)
-interval_score=function(y, pred_draws, confidence=0.95){
-	S=length(pred_draws)
-	alpha=1-confidence
-	alpha_lower=alpha/2  # quantile_value
-	alpha_upper=1-alpha/2 
+interval_score <- function(y, pred_draws, confidence=0.95) {
+	S <- length(pred_draws)
+	alpha <- 1-confidence
+	alpha_lower <- alpha/2  # quantile_value
+	alpha_upper <- 1-alpha/2 
 	l= quantile(pred_draws, alpha_lower, names=FALSE)
 	u= quantile(pred_draws, alpha_upper, names=FALSE)
-	return(u-l+2/alpha* (l-y)* (l>y) + 2/alpha*(x-u) *(x>u))
+	return(u-l+2/alpha* (l-y)* (l>y) + 2/alpha*(y-u) *(y>u))
 }
 
 ## example:
-#interval_score(0,rnorm(1000,0,1),0.95)
-#interval_score(0,rnorm(1000,0,0.1),0.95)
+interval_score(0,rnorm(1000,0,1),0.95)
+interval_score(0,rnorm(1000,0,0.1),0.95)
 
 #==============================================================================
 ## interval score of a mixture
 ## has non-discrete nature
 ## may be optimized using grid approximation in low-D
-interval_score_mixture=function(y, individual_draws,weight,  confidence=0.95){
-	pred_draws=mixture_ensembles(individual_draws=individual_draws,  weight=weight)
+interval_score_mixture = function(y, 
+                                  individual_draws,
+                                  weight,  
+                                  confidence=0.95) {
+  
+	pred_draws <- mixture_ensembles(individual_draws=individual_draws,  weight=weight)
+	
 	return( interval_score(y=y , pred_draws=pred_draws,  confidence=0.95))
 }
 

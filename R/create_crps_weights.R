@@ -47,7 +47,7 @@ traindata %>%
 
 
 ## make mixture model
-# need to replace this by Yuling's MCMC method
+# need to replace this by Yuling's sequential MC method
 mixture <- stackr::create_sampled_mixture(testdata, w)
 
 #### score results
